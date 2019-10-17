@@ -1,4 +1,5 @@
 require 'thor'
+require_relative 'parser'
 
 class Ledger < Thor
   desc "register", "The register command displays all the postings occurring in a single account, line by line."
@@ -8,7 +9,10 @@ class Ledger < Thor
 
   desc "balance", "The balance command reports the current balance of all accounts. "
   def balance
-    puts "balance command"
+    parser = Parser.new
+    parsed_info = parser.parse_ledger("index.ledger")
+
+    puts parsed_info
   end
 
   desc "print", "The print command prints out ledger transactions in a textual format that can be parsed by Ledger."
