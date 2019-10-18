@@ -77,7 +77,16 @@ class Ledger < Thor
 
   desc "print", "The print command prints out ledger transactions in a textual format that can be parsed by Ledger."
   def print
-    puts "print command"
+    @parser.parsed_file.each do |transaction|
+      print_title_line(transaction[:date], transaction[:description])
+
+      transaction[:accounts].each do |account|
+        print_line(account[:description], account[:amount], account[:currency])
+      end
+
+      puts "\n"
+    end
+
   end
 
   private
@@ -129,6 +138,17 @@ class Ledger < Thor
     end
 
     balance_text
+  end
+
+  def print_title_line(date, description)
+    puts "#{date}" + " #{description} "
+  end
+
+  def print_line(description, amount, currency)
+    action = full_action(amount, currency)
+    desc_space = ' ' * (45 - description.size)
+
+    puts "    " + description + desc_space + action
   end
 
 end
