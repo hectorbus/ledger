@@ -8,14 +8,34 @@ require 'thor'
 require 'colorize'
 require_relative 'parser'
 
-ACCOUNT_NESTED_RGX = /^\w+:/
-
 class Ledger < Thor
   class_option :file, type: :string, default: 'index.ledger'
 
   desc "register", "The register command displays all the postings occurring in a single account, line by line."
   def register
-    puts "register command"
+    parser = Parser.new
+    parser.parse_ledger(options[:file])
+
+    transactions = {}
+    balances = {}
+
+    parser.parsed_file.each do |transaction|
+      register_title_line(transaction[:date], transaction[:description])
+
+      transaction[:accounts].each do |account|
+        if balances.include?(account[:currency])
+          balances[account[:currency]] += account[:amount]
+        else
+          balances[account[:currency]] = account[:amount]
+        end
+
+        balances[account[:currency]] = balances[account[:currency]].round(2)
+        register_line(account[:description], account[:amount], balances, account[:currency])
+      end
+    end
+
+    register_balance(balances)
+
   end
 
   desc "balance", "The balance command reports the current balance of all accounts. "
@@ -48,13 +68,13 @@ class Ledger < Thor
     end
 
     transactions.sort_by { |k, v| v }.reverse.each do |description, action|
-      puts_format_line(action, description)
+      balance_line(action, description)
     end
 
     puts '--------------------'
 
     balances.each do |k, v|
-      puts_format_line(full_action(v, k))
+      balance_line(full_action(v, k))
     end
 
   end
@@ -70,14 +90,53 @@ class Ledger < Thor
     "#{'%.2f' % amount} #{currency}"
   end
 
-  def puts_format_line(action, description = nil)
+  def balance_line(action, description = nil)
     space = " " * (20 - action.size)
+    blue_desc = "#{description}".blue
 
     if action.match(/-/)
-      puts "#{space}#{action}  ".red + "#{description}".blue
+      puts "#{space}#{action}  ".red + blue_desc
     else
-      puts "#{space}#{action}  " + "#{description}".blue
+      puts "#{space}#{action}  " + blue_desc
     end
+  end
+
+  def register_title_line(date, description)
+    puts "#{date}".light_black + " #{description} ".light_white
+  end
+
+  def register_line(description, amount, balances, currency)
+    blue_desc = "    #{description}".blue
+    action = full_action(amount, currency)
+    balance_text = register_balance_text(balances)
+    desc_space = ' ' * (50 - description.size) + ' ' * (20 - action.size)
+    balance_space = ' ' * (30 - balance_text[/\w/].size)
+
+    amount_full_action = "#{action}"
+    amount_full_action = amount_full_action.red if amount < 0
+
+    puts blue_desc + desc_space + amount_full_action + balance_space + balance_text
+  end
+
+  def register_balance(balances)
+    balance_text = register_balance_text(balances)
+
+    puts ' ' * 103 + '-' * 23
+    puts ' ' * 103 + balance_text
+  end
+
+  def register_balance_text(balances)
+    balance_text = ''
+
+    balances.each_with_index do |b, i|
+      text = "#{full_action(b.last, b.first)}"
+      text = text.red if b.last < 0
+      text = text + ', ' unless balances.size - 1 == i
+
+      balance_text += text
+    end
+
+    balance_text
   end
 
 end
