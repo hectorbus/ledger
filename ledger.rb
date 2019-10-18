@@ -70,38 +70,64 @@ class Ledger < Thor
   end
 
   desc "balance", "The balance command reports the current balance of all accounts. "
-  def balance
+  def balance(*args)
     transactions = {}
     transactions_sums = {}
 
-    @parser.parsed_file.each do |transaction|
-      transaction[:accounts].each do |account|
-        if @balances.include?(account[:currency])
-          @balances[account[:currency]] += account[:amount]
-        else
-          @balances[account[:currency]] = account[:amount]
+    if args.any?
+      account_found = false
+
+      @parser.parsed_file.each do |transaction|
+        transaction[:accounts].each do |account|
+          if account[:description][/#{args.join('|')}/i]
+            if @balances.include?(account[:currency])
+              @balances[account[:currency]] += account[:amount]
+            else
+              @balances[account[:currency]] = account[:amount]
+            end
+
+            @balances[account[:currency]] = @balances[account[:currency]].round(2)
+
+            if transactions_sums.include?(account[:description])
+              transactions_sums[account[:description]] += account[:amount]
+              transactions[account[:description]] = full_action(transactions_sums[account[:description]], account[:currency])
+            else
+              transactions_sums[account[:description]] = account[:amount]
+              transactions[account[:description]] = full_action(account[:amount], account[:currency])
+            end
+          end
         end
+      end
+    else
+      @parser.parsed_file.each do |transaction|
+        transaction[:accounts].each do |account|
+          if @balances.include?(account[:currency])
+            @balances[account[:currency]] += account[:amount]
+          else
+            @balances[account[:currency]] = account[:amount]
+          end
 
-        @balances[account[:currency]] = @balances[account[:currency]].round(2)
+          @balances[account[:currency]] = @balances[account[:currency]].round(2)
 
-        if transactions_sums.include?(account[:description])
-          transactions_sums[account[:description]] += account[:amount]
-          transactions[account[:description]] = full_action(transactions_sums[account[:description]], account[:currency])
-        else
-          transactions_sums[account[:description]] = account[:amount]
-          transactions[account[:description]] = full_action(account[:amount], account[:currency])
+          if transactions_sums.include?(account[:description])
+            transactions_sums[account[:description]] += account[:amount]
+            transactions[account[:description]] = full_action(transactions_sums[account[:description]], account[:currency])
+          else
+            transactions_sums[account[:description]] = account[:amount]
+            transactions[account[:description]] = full_action(account[:amount], account[:currency])
+          end
         end
       end
     end
 
     transactions.sort_by { |k, v| v }.reverse.each do |description, action|
-      balance_line(action, description)
+      puts balance_line(action, description)
     end
 
     puts '--------------------'
 
     @balances.each do |k, v|
-      balance_line(full_action(v, k))
+      puts balance_line(full_action(v, k))
     end
 
   end
@@ -153,7 +179,7 @@ class Ledger < Thor
     balance_text = balance_text.red if action.match(/-/)
     blue_desc = "#{description}".blue
 
-    puts balance_text + blue_desc
+    balance_text + blue_desc
   end
 
   def register_title_line(date, description)
