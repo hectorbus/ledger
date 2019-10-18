@@ -9,6 +9,8 @@ class Parser
   COMMENT_RGX          = /[\;#%|*].+/.freeze
   INCLUDE_RGX          = /!include .+/.freeze
   LEDGER_FILE_RGX      = /[\w\/]+\.ledger$/.freeze
+  DOLLAR_SIGN          = '$'
+  USD_CURRENCY         = 'USD'
 
   attr_reader :parsed_file
 
@@ -52,7 +54,7 @@ class Parser
           currency = action[ACCOUNT_CURRENCY_RGX]
         end
 
-        currency = 'USD' if currency.eql?('$')
+        currency = USD_CURRENCY if currency.eql?(DOLLAR_SIGN)
         tmp_currency = currency if currency
 
         tmp_account[:description] = line[ACCOUNT_DESC_RGX].strip

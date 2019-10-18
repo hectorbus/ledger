@@ -106,11 +106,11 @@ class Ledger < Thor
   end
 
   def balance_line(action, description = nil)
-    action = " " * (20 - action.size) + action + ' '
-    action = action.red if action.match(/-/)
+    balance_text = " " * (20 - action.size) + action + ' '
+    balance_text = balance_text.red if action.match(/-/)
     blue_desc = "#{description}".blue
 
-    puts action + blue_desc
+    puts balance_text + blue_desc
   end
 
   def register_title_line(date, description)
@@ -139,10 +139,10 @@ class Ledger < Thor
   def register_balance_text(balances)
     balance_text = ''
 
-    balances.each_with_index do |b, i|
-      text = "#{full_action(b.last, b.first)}"
-      text = text.red if b.last < 0
-      text = text + ', ' unless balances.size - 1 == i
+    balances.each_with_index do |balance, index|
+      text = "#{full_action(balance.last, balance.first)}"
+      text = text.red if balance.last < 0
+      text = text + ', ' unless balances.size - 1 == index
 
       balance_text += text
     end
