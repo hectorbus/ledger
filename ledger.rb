@@ -5,11 +5,13 @@
 # --sort VEXPR    | Sort a report using VEXPR.
 
 require 'thor'
+require 'date'
 require 'colorize'
 require_relative 'parser'
 
 class Ledger < Thor
   class_option :file, type: :string, default: 'index.ledger'
+  class_option :sort, type: :string
 
   def initialize(*args)
     super
@@ -20,7 +22,10 @@ class Ledger < Thor
 
   desc "register", "The register command displays all the postings occurring in a single account, line by line."
   def register
-    @parser.parsed_file.each do |transaction|
+    parsed_file = @parser.parsed_file
+    parsed_file = @parser.parsed_file.sort_by{ |h| Date.parse(h[options[:sort].to_sym]) } if options[:sort]
+
+    parsed_file.each do |transaction|
       register_title_line(transaction[:date], transaction[:description])
 
       transaction[:accounts].each do |account|
@@ -77,7 +82,12 @@ class Ledger < Thor
 
   desc "print", "The print command prints out ledger transactions in a textual format that can be parsed by Ledger."
   def print
-    @parser.parsed_file.each do |transaction|
+    parsed_file = @parser.parsed_file
+
+    parsed_file = @parser.parsed_file.sort_by{ |h| h[options[:sort].to_sym] } if options[:sort]
+    parsed_file = @parser.parsed_file.sort_by{ |h| Date.parse(h[options[:sort].to_sym]) } if options[:sort] == 'date'
+
+    parsed_file.each do |transaction|
       print_title_line(transaction[:date], transaction[:description])
 
       transaction[:accounts].each do |account|
