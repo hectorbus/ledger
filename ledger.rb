@@ -23,7 +23,8 @@ class Ledger < Thor
   desc "register", "The register command displays all the postings occurring in a single account, line by line."
   def register
     parsed_file = @parser.parsed_file
-    parsed_file = @parser.parsed_file.sort_by{ |h| Date.parse(h[options[:sort].to_sym]) } if options[:sort]
+    parsed_file = @parser.parsed_file.sort_by{ |h| h[options[:sort].to_sym] } if options[:sort]
+    parsed_file = @parser.parsed_file.sort_by{ |h| Date.parse(h[options[:sort].to_sym]) } if options[:sort] == 'date'
 
     parsed_file.each do |transaction|
       register_title_line(transaction[:date], transaction[:description])
@@ -81,20 +82,37 @@ class Ledger < Thor
   end
 
   desc "print", "The print command prints out ledger transactions in a textual format that can be parsed by Ledger."
-  def print
+  def print(*args)
     parsed_file = @parser.parsed_file
-
     parsed_file = @parser.parsed_file.sort_by{ |h| h[options[:sort].to_sym] } if options[:sort]
     parsed_file = @parser.parsed_file.sort_by{ |h| Date.parse(h[options[:sort].to_sym]) } if options[:sort] == 'date'
 
-    parsed_file.each do |transaction|
-      print_title_line(transaction[:date], transaction[:description])
+    if args.any?
+      account_found = false
+      tmp_accounts = ''
 
-      transaction[:accounts].each do |account|
-        print_line(account[:description], account[:amount], account[:currency])
+      parsed_file.each do |transaction|
+        transaction_text = print_title_line(transaction[:date], transaction[:description]) + "\n"
+
+        transaction[:accounts].each do |account|
+          account_found = true if account[:description][/#{args.join('|')}/i]
+          tmp_accounts += print_line(account[:description], account[:amount], account[:currency]) + "\n"
+        end
+
+        puts transaction_text + tmp_accounts + "\n" if account_found
+        account_found = false
+        tmp_accounts = ''
       end
+    else
+      parsed_file.each do |transaction|
+        puts print_title_line(transaction[:date], transaction[:description])
 
-      puts "\n"
+        transaction[:accounts].each do |account|
+          puts print_line(account[:description], account[:amount], account[:currency])
+        end
+
+        puts "\n"
+      end
     end
 
   end
@@ -151,14 +169,14 @@ class Ledger < Thor
   end
 
   def print_title_line(date, description)
-    puts "#{date}" + " #{description} "
+    "#{date}" + " #{description} "
   end
 
   def print_line(description, amount, currency)
     action = full_action(amount, currency)
     desc_space = ' ' * (45 - description.size)
 
-    puts "    " + description + desc_space + action
+    "    " + description + desc_space + action
   end
 
 end
