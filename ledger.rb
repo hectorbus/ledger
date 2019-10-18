@@ -21,27 +21,52 @@ class Ledger < Thor
   end
 
   desc "register", "The register command displays all the postings occurring in a single account, line by line."
-  def register
+  def register(*args)
     parsed_file = @parser.parsed_file
     parsed_file = @parser.parsed_file.sort_by{ |h| h[options[:sort].to_sym] } if options[:sort]
     parsed_file = @parser.parsed_file.sort_by{ |h| Date.parse(h[options[:sort].to_sym]) } if options[:sort] == 'date'
 
-    parsed_file.each do |transaction|
-      register_title_line(transaction[:date], transaction[:description])
+    if args.any?
+      account_found = false
 
-      transaction[:accounts].each do |account|
-        if @balances.include?(account[:currency])
-          @balances[account[:currency]] += account[:amount]
-        else
-          @balances[account[:currency]] = account[:amount]
+      parsed_file.each do |transaction|
+        transaction_text = register_title_line(transaction[:date], transaction[:description]) + "\n"
+
+        transaction[:accounts].each do |account|
+          if account[:description][/#{args.join('|')}/i]
+            if @balances.include?(account[:currency])
+              @balances[account[:currency]] += account[:amount]
+            else
+              @balances[account[:currency]] = account[:amount]
+            end
+
+            @balances[account[:currency]] = @balances[account[:currency]].round(2)
+            transaction_text += register_line(account[:description], account[:amount], @balances, account[:currency]) + "\n"
+            account_found = true
+          end
         end
 
-        @balances[account[:currency]] = @balances[account[:currency]].round(2)
-        register_line(account[:description], account[:amount], @balances, account[:currency])
+        puts transaction_text if account_found
+        account_found = false
+      end
+    else
+      parsed_file.each do |transaction|
+        puts register_title_line(transaction[:date], transaction[:description])
+
+        transaction[:accounts].each do |account|
+          if @balances.include?(account[:currency])
+            @balances[account[:currency]] += account[:amount]
+          else
+            @balances[account[:currency]] = account[:amount]
+          end
+
+          @balances[account[:currency]] = @balances[account[:currency]].round(2)
+          puts register_line(account[:description], account[:amount], @balances, account[:currency])
+        end
       end
     end
 
-    register_balance(@balances)
+    puts register_balance(@balances)
   end
 
   desc "balance", "The balance command reports the current balance of all accounts. "
@@ -132,7 +157,7 @@ class Ledger < Thor
   end
 
   def register_title_line(date, description)
-    puts "#{date}".light_black + " #{description} ".light_white
+    "#{date}".light_black + " #{description} ".light_white
   end
 
   def register_line(description, amount, balances, currency)
@@ -144,14 +169,15 @@ class Ledger < Thor
     amount_full_action = "#{action}"
     amount_full_action = amount_full_action.red if amount < 0
 
-    puts blue_desc + desc_space + amount_full_action + balance_space + balance_text
+    blue_desc + desc_space + amount_full_action + balance_space + balance_text
   end
 
   def register_balance(balances)
     balance_text = register_balance_text(balances)
+    space = ' ' * 103
+    dashes = '-' * 23
 
-    puts ' ' * 103 + '-' * 23
-    puts ' ' * 103 + balance_text
+    space + dashes + "\n" + space + balance_text
   end
 
   def register_balance_text(balances)
