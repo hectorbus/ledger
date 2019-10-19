@@ -171,7 +171,11 @@ class Ledger < Thor
   private
 
   def full_action(amount, currency)
-    "#{'%.2f' % amount} #{currency}"
+    if currency == 'USD'
+      amount < 0 ? "-$#{'%.2f' % amount.to_s.delete('-')}" : "$#{'%.2f' % amount}"
+    else
+      "#{'%.2f' % amount} #{currency}"
+    end
   end
 
   def balance_line(action, description = nil)
@@ -183,7 +187,7 @@ class Ledger < Thor
   end
 
   def register_title_line(date, description)
-    "#{date}".light_black + " #{description} ".light_white
+    "#{date.gsub('/', '-')}".light_black + " #{description} ".light_white
   end
 
   def register_line(description, amount, balances, currency)
@@ -191,7 +195,7 @@ class Ledger < Thor
     balance_text = register_balance_text(balances)
     blue_desc = "    #{description}".blue
     desc_space = ' ' * (50 - description.size) + ' ' * (20 - action.size)
-    balance_space = ' ' * (30 - balance_text[/\w/].size)
+    balance_space = ' ' * (20 - balance_text[/\w/].size)
     amount_full_action = "#{action}"
     amount_full_action = amount_full_action.red if amount < 0
 
@@ -200,8 +204,8 @@ class Ledger < Thor
 
   def register_balance(balances)
     balance_text = register_balance_text(balances)
-    space = ' ' * 103
-    dashes = '-' * 23
+    space = ' ' * 93
+    dashes = '-' * 20
 
     space + dashes + "\n" + space + balance_text
   end
@@ -226,7 +230,7 @@ class Ledger < Thor
 
   def print_line(description, amount, currency)
     action = full_action(amount, currency)
-    desc_space = ' ' * (45 - description.size)
+    desc_space = ' ' * (38 - description.size)
 
     "    " + description + desc_space + action
   end
