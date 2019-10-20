@@ -12,6 +12,7 @@ require_relative 'parser'
 class Ledger < Thor
   class_option :file, type: :string, default: 'index.ledger'
   class_option :sort, type: :string
+  class_option :"price-db", type: :string
 
   def initialize(*args)
     super
@@ -22,6 +23,8 @@ class Ledger < Thor
 
   desc "register", "The register command displays all the postings occurring in a single account, line by line."
   def register(*args)
+    set_price_db_file(options[:'price-db']) if options[:'price-db']
+
     parsed_file = @parser.parsed_file
     parsed_file = @parser.parsed_file.sort_by{ |h| h[options[:sort].to_sym] } if options[:sort]
     parsed_file = @parser.parsed_file.sort_by{ |h| Date.parse(h[options[:sort].to_sym]) } if options[:sort] == 'date'
@@ -71,6 +74,8 @@ class Ledger < Thor
 
   desc "balance", "The balance command reports the current balance of all accounts. "
   def balance(*args)
+    set_price_db_file(options[:'price-db']) if options[:'price-db']
+
     transactions = {}
     transactions_sums = {}
 
@@ -129,11 +134,12 @@ class Ledger < Thor
     @balances.each do |k, v|
       puts balance_line(full_action(v, k))
     end
-
   end
 
   desc "print", "The print command prints out ledger transactions in a textual format that can be parsed by Ledger."
   def print(*args)
+    set_price_db_file(options[:'price-db']) if options[:'price-db']
+
     parsed_file = @parser.parsed_file
     parsed_file = @parser.parsed_file.sort_by{ |h| h[options[:sort].to_sym] } if options[:sort]
     parsed_file = @parser.parsed_file.sort_by{ |h| Date.parse(h[options[:sort].to_sym]) } if options[:sort] == 'date'
@@ -233,6 +239,30 @@ class Ledger < Thor
     desc_space = ' ' * (38 - description.size)
 
     "    " + description + desc_space + action
+  end
+
+  def set_price_db_file(path)
+    File.open("config.ledger", "w") { |file| file.puts "price_db_file: #{path}"}
+  end
+
+  def get_price_db_file
+    File.open("config.ledger").each do |line|
+      return line[/[^price_db_file:].+$/].strip
+    end
+  end
+
+  def find_price_db_price(file_path, currency)
+    currency_market = nil
+
+    File.open(file_path).each do |line|
+      line_currency = line.scan(/[a-zA-z]+/).last
+
+      if line_currency == currency
+        currency_market = line[/\$.*/].delete('$').to_f.round(2)
+      end
+    end
+
+    currency_market
   end
 
 end
