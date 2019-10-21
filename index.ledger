@@ -1,0 +1,5 @@
+!include records/Income.ledger
+!include records/Bitcoin.ledger
+!include records/Payable.ledger
+!include records/Receivable.ledger
+!include records/Expenses.ledger
