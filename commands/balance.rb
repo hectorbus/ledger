@@ -2,9 +2,12 @@ require 'colorize'
 require_relative '../parser'
 
 class Balance
-  USD_CURRENCY = 'USD'
-  TWO_DECIMALS = '%.2f'
-  EMPTY_SPACE  = ' '
+  USD_CURRENCY = 'USD'.frezze
+  TWO_DECIMALS = '%.2f'.frezze
+  EMPTY_SPACE  = ' '.frezze
+  ACCOUNT_CURRENCY_RGX = /[a-zA-z\$]+/.freeze
+  ACCOUNT_AMOUNT_RGX   = /[\-.|\d]/.freeze
+  FATHER_ACCOUNT_RGX   = /^\w+/.freeze
 
   def initialize(options)
     @parser = Parser.new
@@ -33,8 +36,20 @@ class Balance
       end
     end
 
-    @transactions.sort_by { |k, v| k }.each do |description, action|
-      puts balance_line(action, description)
+    generate_nested_accounts()
+    prev_description = ''
+
+    @transactions.sort_by { |k, v| k }.each_with_index do |transaction, index|
+      description = transaction.first
+      action = transaction.last
+
+      if index != 0 && (prev_description[FATHER_ACCOUNT_RGX] == description[FATHER_ACCOUNT_RGX])
+        puts balance_line(action, description, true)
+      else
+        puts balance_line(action, description)
+      end
+
+      prev_description = description
     end
 
     puts '--------------------'
@@ -49,11 +64,11 @@ class Balance
   def calc_transactions(account)
     if @transactions_sums.include?(account[:description])
       @transactions_sums[account[:description]] += account[:amount]
-      @transactions[account[:description]] = full_action(@transactions_sums[account[:description]], account[:currency])
     else
       @transactions_sums[account[:description]] = account[:amount]
-      @transactions[account[:description]] = full_action(account[:amount], account[:currency])
     end
+
+    @transactions[account[:description]] = full_action(@transactions_sums[account[:description]], account[:currency])
   end
 
   def calc_balance(account)
@@ -66,6 +81,59 @@ class Balance
     @balances[account[:currency]] = @balances[account[:currency]].round(2)
   end
 
+  def generate_nested_accounts()
+    sorted_transactions = @transactions.sort_by { |k, v| k }
+    prev_description = sorted_transactions.first.first
+    prev_action = sorted_transactions.first.last
+    new_accounts = {}
+
+    sorted_transactions.each_with_index do |transaction, index|
+      if index != 0
+        description = transaction.first
+        action = transaction.last
+
+        if description[/^\w+/] == prev_description[/^\w+/]
+          if new_accounts[description[/^\w+/]]
+            new_accounts[description[/^\w+/]].push(prev_action)
+          else
+            new_accounts[description[/^\w+/]] = [action, prev_action]
+          end
+        end
+
+        prev_description = description
+        prev_action = action
+      end
+    end
+
+    new_accounts.each do |account, amounts|
+      balances = {}
+
+      amounts.each do |amount|
+        currency = amount.scan(ACCOUNT_CURRENCY_RGX).join
+        currency = USD_CURRENCY if currency.eql?("$")
+        amount_n = amount.scan(ACCOUNT_AMOUNT_RGX).join
+
+        if balances[currency]
+          balances[currency] += amount_n.to_f.round(2)
+        else
+          balances[currency] = amount_n.to_f.round(2)
+        end
+      end
+
+      new_accounts[account] = balances
+    end
+
+    new_accounts.each do |account|
+      new_accounts_text = []
+
+      account.last.each do |action|
+        new_accounts_text.push(full_action(action.last, action.first))
+      end
+
+      @transactions[account.first] = new_accounts_text.join(', ')
+    end
+  end
+
   def full_action(amount, currency)
     if currency == USD_CURRENCY
       amount < 0 ? "-$#{TWO_DECIMALS % amount.to_s.delete('-')}" : "$#{TWO_DECIMALS % amount}"
@@ -74,12 +142,17 @@ class Balance
     end
   end
 
-  def balance_line(action, description = nil)
-    balance_text = EMPTY_SPACE * (20 - action.size) + action + EMPTY_SPACE
+  def balance_line(action, description = nil, tab = nil)
+    blue_desc = "#{description}"
+    action.size < 20 ? empty_space = EMPTY_SPACE * (20 - action.size) : empty_space = ''
+    balance_text = empty_space + action + EMPTY_SPACE * 2
     balance_text = balance_text.red if action.match(/-/)
-    blue_desc = "#{description}".blue
 
-    balance_text + blue_desc
+    if tab
+      blue_desc = ("  " + blue_desc.scan(/(?<=:).*/).join)
+    end
+
+    balance_text + blue_desc.blue
   end
 
 end

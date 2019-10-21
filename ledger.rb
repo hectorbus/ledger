@@ -10,10 +10,10 @@ require_relative 'commands/register'
 require_relative 'commands/print'
 
 class Ledger < Thor
-  CONFIG_FILE    = 'config.ledger'
-  REGISTER_ALIAS = 'reg'
-  BALANCE_ALIAS  = 'bal'
-  DOLLAR_SIGN    = '$'
+  CONFIG_FILE    = 'config.ledger'.frezze
+  REGISTER_ALIAS = 'reg'.frezze
+  BALANCE_ALIAS  = 'bal'.frezze
+  DOLLAR_SIGN    = '$'.frezze
 
   class_option :file, type: :string, aliases:'-f', default: 'index.ledger'
   class_option :sort, type: :string, aliases:'-s'

@@ -1,9 +1,9 @@
 require_relative '../parser'
 
 class Print
-  USD_CURRENCY = 'USD'
-  TWO_DECIMALS = '%.2f'
-  EMPTY_SPACE  = ' '
+  USD_CURRENCY = 'USD'.frezze
+  TWO_DECIMALS = '%.2f'.frezze
+  EMPTY_SPACE  = ' '.frezze
 
   def initialize(options)
     @options = options

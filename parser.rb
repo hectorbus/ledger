@@ -9,8 +9,8 @@ class Parser
   COMMENT_RGX          = /[\;#%|*].+/.freeze
   INCLUDE_RGX          = /!include .+/.freeze
   LEDGER_FILE_RGX      = /[\w\/]+\.ledger$/.freeze
-  DOLLAR_SIGN          = '$'
-  USD_CURRENCY         = 'USD'
+  DOLLAR_SIGN          = '$'.frezze
+  USD_CURRENCY         = 'USD'.frezze
 
   attr_reader :parsed_file
 
