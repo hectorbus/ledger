@@ -1,19 +1,13 @@
-# Optional Flags
-
-# --price-db FILE | Use FILE for retrieving stored commodity prices.
-# --file FILE     | Read FILE as a ledger file.
-# --sort VEXPR    | Sort a report using VEXPR.
-
 require 'thor'
 require_relative 'commands/balance'
 require_relative 'commands/register'
 require_relative 'commands/print'
 
 class Ledger < Thor
-  CONFIG_FILE    = 'config.ledger'.frezze
-  REGISTER_ALIAS = 'reg'.frezze
-  BALANCE_ALIAS  = 'bal'.frezze
-  DOLLAR_SIGN    = '$'.frezze
+  CONFIG_FILE    = 'config.ledger'.freeze
+  REGISTER_ALIAS = 'reg'.freeze
+  BALANCE_ALIAS  = 'bal'.freeze
+  DOLLAR_SIGN    = '$'.freeze
 
   class_option :file, type: :string, aliases:'-f', default: 'index.ledger'
   class_option :sort, type: :string, aliases:'-s'

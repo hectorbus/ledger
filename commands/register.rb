@@ -3,9 +3,9 @@ require 'colorize'
 require_relative '../parser'
 
 class Register
-  USD_CURRENCY = 'USD'.frezze
-  TWO_DECIMALS = '%.2f'.frezze
-  EMPTY_SPACE  = ' '.frezze
+  USD_CURRENCY = 'USD'.freeze
+  TWO_DECIMALS = '%.2f'.freeze
+  EMPTY_SPACE  = ' '.freeze
 
   def initialize(options)
     @options = options
@@ -47,7 +47,6 @@ class Register
 
         transaction[:accounts].each do |account|
           calc_balance(account)
-          
           puts register_line(account[:description], account[:amount], @balances, account[:currency])
         end
       end

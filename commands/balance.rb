@@ -2,12 +2,12 @@ require 'colorize'
 require_relative '../parser'
 
 class Balance
-  USD_CURRENCY = 'USD'.frezze
-  TWO_DECIMALS = '%.2f'.frezze
-  EMPTY_SPACE  = ' '.frezze
   ACCOUNT_CURRENCY_RGX = /[a-zA-z\$]+/.freeze
   ACCOUNT_AMOUNT_RGX   = /[\-.|\d]/.freeze
   FATHER_ACCOUNT_RGX   = /^\w+/.freeze
+  USD_CURRENCY         = 'USD'.freeze
+  TWO_DECIMALS         = '%.2f'.freeze
+  EMPTY_SPACE          = ' '.freeze
 
   def initialize(options)
     @parser = Parser.new
@@ -107,6 +107,7 @@ class Balance
 
     new_accounts.each do |account, amounts|
       balances = {}
+      new_accounts_text = []
 
       amounts.each do |amount|
         currency = amount.scan(ACCOUNT_CURRENCY_RGX).join
