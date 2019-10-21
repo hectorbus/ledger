@@ -10,8 +10,8 @@ class Ledger < Thor
   DOLLAR_SIGN    = '$'.freeze
 
   class_option :file, type: :string, aliases:'-f', default: 'index.ledger'
-  class_option :sort, type: :string, aliases:'-s'
-  class_option :"price-db", type: :string
+  class_option :sort, type: :string, aliases:'-s', desc: 'Available options: [date, description]'
+  class_option :"price-db", type: :string, desc: 'Specify the location of the price entry data file.'
 
   def initialize(*args)
     super
